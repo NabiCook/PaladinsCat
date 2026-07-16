@@ -1,11 +1,11 @@
 <!--
-  PaladinsCat Blog — Skin ID Int16 Overflow Investigation
+  PaladinsCat Blog — Skin ID Int16 API Failure Analysis
   Public-facing content. No source code or backend internals.
 -->
 
-# 🔴 The Int16 Skin ID Overflow
+# 🔴 The Int16 Skin ID API Failure
 
-> A deep dive into how signed 16-bit integer limitations can silently corrupt game statistics data — and how we recovered it.
+> How Paladins skin IDs outgrew a signed 16-bit field—and how existing match data was aggregated into a known-broken skin list.
 
 ---
 
@@ -15,28 +15,34 @@
 
 ## The Problem
 
-The Hi-Rez API returns `skin_id` values that exceed the signed 16-bit integer maximum of **32,767**. When a system stores these values as `smallint` (Int16), the values silently overflow and wrap around to negative numbers, corrupting data without raising any errors.
+Some Paladins `skin_id` values now exceed the signed 16-bit integer maximum of **32,767**, but part of the Hi-Rez match-data path still attempts to deserialize the field as an `Int16`. The value cannot fit, so the API emits an explicit error message instead of returning the affected player row:
 
-### What does overflow look like?
+```text
+Value was either too large or too small for an Int16. Failing Field = skin_id
+```
 
-| Real `skin_id` | Stored as Int16 | Result |
-|---:|---:|---|
-| 32,829 | -32,707 | ❌ Corrupted |
-| 33,060 | -32,676 | ❌ Corrupted |
-| 33,741 | -31,795 | ❌ Corrupted |
+### What happens above the boundary?
 
-The values don't throw an error. They don't log a warning. They just become *wrong* — silently rewriting player data.
+| Real `skin_id` | Above Int16 maximum | API result |
+|---:|:---:|:---|
+| 32,829 | Yes | Player row dropped; Int16 `ret_msg` returned |
+| 33,060 | Yes | Player row dropped; Int16 `ret_msg` returned |
+| 33,741 | Yes | Player row dropped; Int16 `ret_msg` returned |
+
+The failure is **not silent**, and the observed response does not wrap the value into a stored negative number. The API reports the Int16 failure, but it does so inside the response payload after dropping data. Because `getmatchdetailsbatch` is ordered, the failed player and every player after that position can disappear from the direct result.
 
 ---
 
-## Detection
+## Building the Known-Broken Skin List
 
-We discovered this during routine match investigation. Players appeared in match data with missing or garbled skin information. A deeper query revealed the root cause.
+The Int16 failure was already known: skin IDs above **32,767** cause the Hi-Rez match-data path to return an overflow error. PaladinsCat did not discover the issue from missing or garbled skin names.
+
+In **May 2026**, we queried existing match data in the PaladinsCat database and aggregated the observed skin IDs above the Int16 boundary. This produced an operational list of known broken skins that PaladinsCat could maintain and reference.
 
 > [!NOTE]  
-> The investigation started with match data where skin names were missing or incorrect. Tracing back revealed Int16 overflow as the root cause for specific high-value skin IDs.
+> This was a database fetch and aggregation task—not detection of the Int16 issue itself. It turned affected skin IDs scattered across existing match records into a maintained known-broken list.
 
-**Result: 31 skins above the Int16 boundary** (as of July 2026).
+**Aggregated result: 31 known broken skins across 20 champions** (as of July 2026).
 
 ---
 
@@ -94,55 +100,7 @@ Five skins were flagged as false positives by other groups but confirmed **safe*
 
 ---
 
-## Recovery Pipeline
-
-When a match contains players with broken skin IDs, the standard match data endpoint returns partial or corrupted results. PaladinsCat handles this through a multi-stage recovery process:
-
-### Recovery Stages
-
-```
-┌─────────────────────────────────────────────┐
-│ Stage 1: Detect broken skin_id              │
-│ (Int16 overflow sentinel in match data)     │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────┐
-│ Stage 2: Fetch participant IDs              │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────┐
-│ Stage 3: Recover player facts               │
-│ (match history lookup)                      │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────┐
-│ Stage 4: Fill gaps                          │
-│ (Match details: duration, replay, bans)     │
-└─────────────────────────────────────────────┘
-```
-
-Recovery preserves whatever valid direct data still exists, then fills in missing player information through supplementary lookups. When a direct match response contains fewer than 10 usable player rows, the recovery pipeline triggers automatically.
-
----
-
-## Impact on Data Quality
-
-Each player row in PaladinsCat is tagged with its data origin:
-
-| Source | How it was obtained | Quality |
-|---|---|:---:|
-| `direct` | Full match data endpoint | 🟢 High |
-| `recovered` | Match history lookup | 🟢 High |
-| `minimal` | Profile-only fallback | 🟡 Low |
-
-Matches with broken skins are marked with `broken=true` and `recovered=true` flags so users can verify data provenance.
-
----
-
-### Summary Statistics
+## Boundary Summary
 
 ```
 Int16 max (signed):    32,767
@@ -157,4 +115,4 @@ Current highest ID:   33,769
 
 ---
 
-*This post was written based on real production data from July 2026. All skin IDs and champion names are sourced from the Hi-Rez API response data.*
+*The database aggregation began in May 2026, and this post was published in July 2026. The listed skin IDs and champion names reflect Hi-Rez API response data available at publication time.*

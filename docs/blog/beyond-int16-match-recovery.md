@@ -110,39 +110,36 @@ The visible outcomes differ, but the lost information is the same: the player ca
 
 ---
 
-## How PaladinsCat recovers the match
+## Failure and Recovery Flow
 
-PaladinsCat does not treat the first `ret_msg` as proof that the whole match is unusable. It treats the response as a damaged evidence set and moves it through a recovery pipeline.
+PaladinsCat treats the Hi-Rez `ret_msg` and any surviving player rows as a damaged evidence set—not as proof that the whole match is unusable. Both the zero-player and five-player failures enter the same recovery flow:
 
-### 1. Detect the incomplete direct response
+```mermaid
+flowchart TD
+    A["Hi-Rez reads skin_id as Int16"] --> B{"skin_id above 32,767?"}
+    B -->|No| C["10 usable player rows"]
+    C --> D["Publish rows with source=direct"]
+    B -->|Yes| E["Int16 ret_msg sentinel"]
+    E --> F{"Sentinel position"}
+    F -->|Position 1| G["0 direct rows<br/>All 10 players dropped"]
+    F -->|Position 6| H["5 direct rows<br/>Team 2 dropped"]
+    G --> I["Mark match broken=true"]
+    H --> I
+    I --> J["Fetch participant IDs"]
+    J --> K["Recover missing facts from match history<br/>and stored observations"]
+    K --> L["Reconcile map, duration, bans,<br/>replay, and score evidence"]
+    L --> M{"10 authoritative rows?"}
+    M -->|Yes| N["Publish recovered=true<br/>with per-row provenance"]
+    M -->|No| O["Keep minimal or incomplete evidence<br/>clearly labeled"]
+```
 
-A normal Paladins match must resolve to ten usable player rows. PaladinsCat triggers recovery when it sees the Int16 `ret_msg`, fewer than ten usable rows, or both.
-
-### 2. Preserve the valid prefix
-
-Rows returned intact before the error are not discarded. They retain a `direct` source because they came from the standard match-details response.
-
-If the sentinel occurs in position one, there is no direct prefix. PaladinsCat records that absence and expands recovery to the full ten-player roster instead of treating the match as nonexistent.
-
-### 3. Recover the missing participants
-
-PaladinsCat obtains the participant set independently, then correlates the affected match through player match histories and previously captured observations. Missing player facts are rebuilt as `recovered` rows rather than being disguised as direct API output.
-
-### 4. Fill the match shell
-
-Map, duration, replay availability, bans, score evidence, and other match-level facts are reconciled from the surviving response and supplementary Hi-Rez endpoints. Conflicting or incomplete observations are not silently promoted.
-
-### 5. Publish provenance with the result
-
-The finished match keeps its history:
+### Provenance Legend
 
 | Label | Meaning | Treatment |
 |:---|:---|:---|
 | `direct` | Player row survived the standard match-details response | Preserved as high-quality direct evidence |
 | `recovered` | Player facts were reconstructed from match-specific history or observations | Published as authoritative recovery evidence |
 | `minimal` | Only a limited fallback record could be established | Kept visibly lower-confidence |
-
-The match itself is marked `broken=true` to record the upstream failure and `recovered=true` when the recovery pipeline restores a usable result.
 
 ---
 
@@ -167,39 +164,11 @@ Match [`1280790711`](https://paladinscat.com/matches/1280790711) demonstrates fu
 
 ---
 
-## The contrast
-
-| Failure boundary | Conventional outcome | PaladinsCat outcome |
-|:---|:---|:---|
-| Int16 `ret_msg` appears | Fail the command or request | Preserve the payload and classify the sentinel |
-| Broken skin is in position 1 | Drop all 10 players; return an error or not found | Recover all 10 player rows from independent evidence |
-| Broken skin is in position 6 | Return only the five Team 1 players | Preserve 5 direct rows and recover the missing 5 |
-| Fewer than 10 player rows | Render a partial result or return not found | Trigger targeted recovery automatically |
-| Team 2 is missing | Match remains incomplete | Reconstruct missing participants from independent evidence |
-| Data origin is unclear | Returned rows appear equivalent | Label every row `direct`, `recovered`, or `minimal` |
-| Upstream bug persists | Match stays unavailable | Publish a complete result with `broken` and `recovered` status |
-
----
-
 ## Why this is the breakthrough
 
 The breakthrough is not the discovery that **32,767** is the Int16 limit. It is recognizing that the Hi-Rez response before the sentinel is still valuable, that the absent rows can be reconstructed from independent match evidence, and that direct and recovered facts must remain distinguishable.
 
-That approach turns a long-standing upstream failure into a transparent data-quality state:
-
-```text
-partial payload + Int16 sentinel
-                ↓
-preserve any direct evidence
-                ↓
-recover missing player facts
-                ↓
-validate a 10-player result
-                ↓
-publish broken=true, recovered=true
-```
-
-For players, the difference is simple: instead of an error, half a team, or a 404, they receive a complete scoreboard with visible provenance and evidence that remains available for community review.
+The consolidated flow above turns a long-standing upstream failure into a transparent data-quality state. For players, the difference is simple: instead of an error, half a team, or a 404, they receive a complete scoreboard with visible provenance and evidence that remains available for community review.
 
 ---
 

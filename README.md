@@ -15,13 +15,13 @@ PaladinsCat is a community-focused intelligence and analytics platform for [Pala
 
 The platform brings player profiles, match histories, champion statistics, and account signals together in one place. Its findings are intended to inform community awareness and careful player judgment—not replace official moderation or treat an unverified suspicion as a final determination.
 
-## Founding breakthrough: solving a long-standing data corruption issue
+## Founding breakthrough: solving a long-standing match response failure
 
-PaladinsCat began development in **May 2026** while investigating a skin ID corruption issue that had been known for more than five years but remained unaddressed. The investigation traced missing and incorrect skin information to a silent signed 16-bit integer overflow and identified **31 affected skins across 20 champions** whose IDs had crossed the `32,767` limit.
+PaladinsCat began development in **May 2026** while addressing a skin ID API failure that had been known for more than five years but remained unresolved. When an affected skin ID exceeds the signed 16-bit limit of `32,767`, Hi-Rez returns an explicit Int16 error and truncates the ordered match response. A database aggregation of existing matches cataloged **31 known broken skins across 20 champions**.
 
-That finding became PaladinsCat's first major technical breakthrough and the starting point for the platform itself. PaladinsCat now detects affected matches and uses a multi-stage recovery pipeline to reconstruct player details, fill gaps, and label each record by its source and quality. Instead of silently accepting incomplete data—or discarding the match—the platform preserves what is valid and clearly identifies what was recovered.
+That recovery work became PaladinsCat's first major technical breakthrough and the starting point for the platform itself. PaladinsCat now detects affected matches and uses a multi-stage recovery pipeline to reconstruct player details, fill gaps, and label each record by its source and quality. Instead of accepting incomplete data—or discarding the match—the platform preserves what is valid and clearly identifies what was recovered.
 
-[**Read the investigation, published July 2026 →**](docs/blog/skin-id-overflow.md)
+[**Read the analysis, published July 2026 →**](docs/blog/skin-id-overflow.md)
 
 ## Key points
 
@@ -40,7 +40,7 @@ This repository contains PaladinsCat's **public release artifacts, technical doc
 
 | Post | Description |
 |:---|:---|
-| [The Int16 Skin ID Overflow](docs/blog/skin-id-overflow.md) | How signed 16-bit integer limitations silently corrupt game statistics data—and how PaladinsCat recovered it |
+| [The Int16 Skin ID API Failure](docs/blog/skin-id-overflow.md) | Why skin IDs above 32,767 trigger the Int16 failure and how known broken skins were cataloged from existing matches |
 | [Beyond the Int16 Overflow](docs/blog/beyond-int16-match-recovery.md) | How one broken skin truncates a raw Hi-Rez match response—and how PaladinsCat rebuilds the missing players with visible provenance |
 
 ## License
