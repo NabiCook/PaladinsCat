@@ -27,8 +27,8 @@ That finding became PaladinsCat's first major technical breakthrough and the sta
 
 - **Account intelligence:** connects player and match activity to reveal suspicious or harmful patterns that individual matches may not show.
 - **Private-profile visibility:** preserves relevant match activity for analysis even when an account's profile is private.
-- **Evidence over accusation:** gives players documented activity they can inspect instead of relying on hearsay alone. [Match `1280790711`](https://paladinscat.com/matches/1280790711) is a live example containing two currently confirmed-cheater records while also carrying `broken=true` and `recovered=true` status.
-- **Resilient, transparent analytics:** detects and reconstructs broken matches while identifying whether records are direct, recovered, or minimal. In the example above, all ten player rows were recovered and remain authoritative.
+- **Evidence over accusation:** gives players documented activity they can inspect instead of relying on hearsay alone.
+- **Resilient, transparent analytics:** detects and reconstructs broken matches while identifying whether records are direct, recovered, or minimal.
 - **Data integrity first:** investigates and validates upstream game data rather than automatically treating every response as correct.
 - **Open technical findings:** publishes investigations and production lessons as detailed blog posts.
 
