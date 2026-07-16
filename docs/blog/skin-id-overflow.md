@@ -151,4 +151,10 @@ Current highest ID:   33,769
 
 ---
 
+## Continue reading
+
+[**Beyond the Int16 Overflow: Recovering the Match Hi-Rez Drops →**](beyond-int16-match-recovery.md) follows the failure into the raw Hi-Rez payload and shows how PaladinsCat reconstructs the players that disappear after the Int16 sentinel.
+
+---
+
 *This post was written based on real production data from July 2026. All skin IDs and champion names are sourced from the Hi-Rez API response data.*
