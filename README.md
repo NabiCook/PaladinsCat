@@ -40,7 +40,7 @@ This repository contains PaladinsCat's **public release artifacts, technical doc
 
 | Post | Description |
 |:---|:---|
-| [The Int16 Skin ID API Failure](docs/blog/skin-id-overflow.md) | Why skin IDs above 32,767 trigger the Int16 failure and how known broken skins were cataloged from existing matches |
+| [The Int16 Skin ID API Failure](docs/blog/skin-id-overflow.md) | Why skin IDs above 32,767 trigger the Int16 failure, with a database-sourced list of known affected skins |
 | [Beyond the Int16 Overflow](docs/blog/beyond-int16-match-recovery.md) | How one broken skin truncates a raw Hi-Rez match response—and how PaladinsCat rebuilds the missing players with visible provenance |
 
 ## License

@@ -5,7 +5,7 @@
 
 # Beyond the Int16 Overflow: Recovering the Match Hi-Rez Drops
 
-> One broken skin can truncate a match response, erase an entire team from the result, and make the match appear not to exist. PaladinsCat treats that failure as recoverable evidence.
+> One broken skin can truncate a match response and leave the result incomplete or unavailable. PaladinsCat treats that failure as recoverable evidence.
 
 ---
 
@@ -17,7 +17,7 @@
 
 Our [first Int16 overflow post](skin-id-overflow.md) documented the numeric boundary behind broken Paladins skin data. Skin IDs now exceed the signed 16-bit maximum of **32,767**, but part of the Hi-Rez match-data path still attempts to read the value as an `Int16`.
 
-The boundary itself was not a new discovery. The issue had been known for more than five years. The breakthrough that started PaladinsCat development in **May 2026** was learning how the failure changes the raw match response—and building a system that can recover the match instead of returning an error, five-player fragment, or 404.
+The boundary itself was not a new discovery. The issue had been known for more than five years. The breakthrough that started PaladinsCat development in **May 2026** was understanding how the failure disrupts raw match responses—and building a system that reconstructs complete results from incomplete or failed data.
 
 This post follows that failure from the raw Hi-Rez payload to the final PaladinsCat scoreboard.
 
@@ -25,7 +25,7 @@ This post follows that failure from the raw Hi-Rez payload to the final Paladins
 
 ## What the raw API response looks like
 
-The practical failure occurs in `getmatchdetailsbatch`. The endpoint returns an ordered sequence of player rows. When its serializer reaches a player using an affected skin, the response can contain a valid prefix followed by an error sentinel:
+The practical failure appears in the raw match-details response. Player data is processed in order. When the API reaches a player using an affected skin, it returns an Int16 error; earlier rows may survive as a valid prefix while the affected row and everything after it is dropped:
 
 ```json
 [
@@ -53,7 +53,9 @@ The practical failure occurs in `getmatchdetailsbatch`. The endpoint returns an 
 
 This is not a normal HTTP failure with a clean error status. Valid player objects and an application-level `ret_msg` can arrive in the same response. A consumer must understand both the order and the incompleteness of the payload.
 
-### Case 1: the broken skin is in player position six
+The surviving fragment is not fixed. The failure can occur at any player position, leaving anywhere from zero to nine usable rows before the affected row and everything after it is dropped. The cases below are observed examples, not the only possible response shapes.
+
+### Observed Example: Broken Skin in Player Position Six
 
 The response stops being useful at the broken row. If the affected skin appears in player position six—the first slot on Team 2—the API has already emitted the five Team 1 players. The broken sixth row becomes the sentinel, and the remaining Team 2 rows never arrive.
 
@@ -65,7 +67,7 @@ That exact shape is visible for match [`1280822548`](https://paladinscat.com/mat
 
 Returning five valid rows is especially dangerous because the payload looks partially successful. A client that only checks whether the array is non-empty can render half a scoreboard without realizing that the other team was dropped.
 
-### Case 2: the broken skin is in player position one
+### Observed Example: Broken Skin in Player Position One
 
 The more extreme failure happens when the affected skin belongs to the first player in the ordered payload. The serializer fails before it emits a single valid player row:
 
@@ -112,34 +114,47 @@ The visible outcomes differ, but the lost information is the same: the player ca
 
 ## Failure and Recovery Flow
 
-PaladinsCat treats the Hi-Rez `ret_msg` and any surviving player rows as a damaged evidence set—not as proof that the whole match is unusable. Both the zero-player and five-player failures enter the same recovery flow:
+PaladinsCat treats the Hi-Rez error and any surviving player rows as a damaged evidence set—not as proof that the whole match is unusable. At a public level, recovery follows this flow:
 
 ```mermaid
 flowchart TD
-    A["Hi-Rez reads skin_id as Int16"] --> B{"skin_id above 32,767?"}
-    B -->|No| C["10 usable player rows"]
-    C --> D["Publish rows with source=direct"]
-    B -->|Yes| E["Int16 ret_msg sentinel"]
-    E --> F{"Sentinel position"}
-    F -->|Position 1| G["0 direct rows<br/>All 10 players dropped"]
-    F -->|Position 6| H["5 direct rows<br/>Team 2 dropped"]
-    G --> I["Mark match broken=true"]
-    H --> I
-    I --> J["Fetch participant IDs"]
-    J --> K["Recover missing facts from match history<br/>and stored observations"]
-    K --> L["Reconcile map, duration, bans,<br/>replay, and score evidence"]
-    L --> M{"10 authoritative rows?"}
-    M -->|Yes| N["Publish recovered=true<br/>with per-row provenance"]
-    M -->|No| O["Keep minimal or incomplete evidence<br/>clearly labeled"]
+    A["Receive match response"] --> B{"Complete and usable?"}
+    B -->|Yes| C["Publish standard match result"]
+    B -->|No| D["Classify match as broken"]
+    D --> E["Preserve usable evidence"]
+    E --> F["Gather independent match evidence"]
+    F --> G["Reconstruct missing records"]
+    G --> H{"Recovery validation passes?"}
+    H -->|Yes| I["Publish recovered result<br/>with source labels"]
+    H -->|No| J["Retain limited result<br/>with recovery state visible"]
 ```
 
-### Provenance Legend
+> [!NOTE]
+> This diagram describes PaladinsCat's public recovery behavior. Internal endpoints, lookup order, storage layers, and validation rules are intentionally omitted.
 
-| Label | Meaning | Treatment |
-|:---|:---|:---|
-| `direct` | Player row survived the standard match-details response | Preserved as high-quality direct evidence |
-| `recovered` | Player facts were reconstructed from match-specific history or observations | Published as authoritative recovery evidence |
-| `minimal` | Only a limited fallback record could be established | Kept visibly lower-confidence |
+### Match Health and Provenance Legend
+
+Match health tags describe the condition of the result. Provenance labels describe where individual player records came from. The two are separate and may appear together.
+
+#### Match Health Tags
+
+| Tag | Public meaning |
+|:---|:---|
+| `Broken` | The original match response failed or dropped data. |
+| `Partial` | Only part of the expected match data is available. |
+| `Recovered` | Missing match data was reconstructed and the recovered result passed validation. |
+| `Private` | The match contains one or more private-profile participants, so some identity details may be unavailable. |
+| `Limited` | The match is available with reduced detail; unavailable fields remain clearly identified. |
+
+#### Player-Row Provenance
+
+| Label | Public meaning |
+|:---|:---|
+| `direct` | The player record came from the original match response. |
+| `recovered` | The player record was reconstructed from independent match evidence. |
+| `minimal` | Only a limited player record could be established. |
+
+A `Limited` match may contain `minimal` player records, but a health tag and a provenance label are not interchangeable.
 
 ---
 

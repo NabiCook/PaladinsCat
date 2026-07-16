@@ -5,7 +5,7 @@
 
 # 🔴 The Int16 Skin ID API Failure
 
-> How Paladins skin IDs outgrew a signed 16-bit field—and how existing match data was aggregated into a known-broken skin list.
+> Why Paladins skin IDs above 32,767 break the Hi-Rez match API, with a database-sourced list of known affected skins.
 
 ---
 
@@ -29,20 +29,15 @@ Value was either too large or too small for an Int16. Failing Field = skin_id
 | 33,060 | Yes | Player row dropped; Int16 `ret_msg` returned |
 | 33,741 | Yes | Player row dropped; Int16 `ret_msg` returned |
 
-The failure is **not silent**, and the observed response does not wrap the value into a stored negative number. The API reports the Int16 failure, but it does so inside the response payload after dropping data. Because `getmatchdetailsbatch` is ordered, the failed player and every player after that position can disappear from the direct result.
+The failure is **not silent**. When a positive skin ID exceeds the Int16 limit of **32,767**, the Hi-Rez API returns an Int16 error and drops the match data.
 
 ---
 
-## Building the Known-Broken Skin List
+## Known Broken Skins
 
-The Int16 failure was already known: skin IDs above **32,767** cause the Hi-Rez match-data path to return an overflow error. PaladinsCat did not discover the issue from missing or garbled skin names.
+The list below was fetched from existing PaladinsCat database records. It contains observed skin IDs above the signed Int16 boundary.
 
-In **May 2026**, we queried existing match data in the PaladinsCat database and aggregated the observed skin IDs above the Int16 boundary. This produced an operational list of known broken skins that PaladinsCat could maintain and reference.
-
-> [!NOTE]  
-> This was a database fetch and aggregation task—not detection of the Int16 issue itself. It turned affected skin IDs scattered across existing match records into a maintained known-broken list.
-
-**Aggregated result: 31 known broken skins across 20 champions** (as of July 2026).
+**Database snapshot: 31 known broken skins across 20 champions** (July 2026).
 
 ---
 
@@ -115,4 +110,4 @@ Current highest ID:   33,769
 
 ---
 
-*The database aggregation began in May 2026, and this post was published in July 2026. The listed skin IDs and champion names reflect Hi-Rez API response data available at publication time.*
+*The listed skin IDs and champion names were fetched from existing PaladinsCat database records and reflect data available in July 2026.*
