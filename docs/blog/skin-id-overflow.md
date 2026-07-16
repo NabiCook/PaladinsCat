@@ -23,7 +23,7 @@ Value was either too large or too small for an Int16. Failing Field = skin_id
 
 ### What happens above the boundary?
 
-| Real `skin_id` | Above Int16 maximum | API result |
+| `skin_id` | Above Int16 maximum | API result |
 |---:|:---:|:---|
 | 32,829 | Yes | Player row dropped; Int16 `ret_msg` returned |
 | 33,060 | Yes | Player row dropped; Int16 `ret_msg` returned |
