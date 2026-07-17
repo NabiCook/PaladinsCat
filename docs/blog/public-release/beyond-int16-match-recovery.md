@@ -61,7 +61,7 @@ The response stops being useful at the broken row. If the affected skin appears 
 
 That exact shape is visible for match [`1280822548`](https://paladinscat.com/matches/1280822548):
 
-![PaladinsAssistant showing only the five Team 1 players for match 1280822548](assets/int16-match-recovery/paladins-assistant-partial-team-dropout.jpg)
+![PaladinsAssistant showing only the five Team 1 players for match 1280822548](../assets/int16-match-recovery/paladins-assistant-partial-team-dropout.jpg)
 
 *PaladinsAssistant displays the five-player prefix. Team 2 is absent after the broken skin occupies the sixth player position.*
 
@@ -92,19 +92,19 @@ The examples below show the extreme first-position failure for match `1280790711
 
 ### Generic command failure
 
-![PaladinsAssistant returning a generic error for match 1280790711](assets/int16-match-recovery/paladins-assistant-api-error.jpg)
+![PaladinsAssistant returning a generic error for match 1280790711](../assets/int16-match-recovery/paladins-assistant-api-error.jpg)
 
 *PaladinsAssistant cannot render match `1280790711` and returns a generic retry or bug message.*
 
 ### Explicit broken-skin error
 
-![Itto Bot explaining that certain skins break the Hi-Rez API](assets/int16-match-recovery/itto-bot-api-error.jpg)
+![Itto Bot explaining that certain skins break the Hi-Rez API](../assets/int16-match-recovery/itto-bot-api-error.jpg)
 
 *Itto Bot recognizes the affected-skin condition but still cannot provide the match result.*
 
 ### Match not found
 
-![Paladins.guru returning a 404 match not found page](assets/int16-match-recovery/paladins-guru-match-not-found.jpg)
+![Paladins.guru returning a 404 match not found page](../assets/int16-match-recovery/paladins-guru-match-not-found.jpg)
 
 *Paladins.guru surfaces the failed upstream result as “404 — Match not found.”*
 
@@ -170,7 +170,7 @@ Match [`1280822548`](https://paladinscat.com/matches/1280822548) demonstrates th
 
 Match [`1280790711`](https://paladinscat.com/matches/1280790711) demonstrates full reconstruction after the first-position failure. Because the broken skin appears before any valid direct row, all ten players must be recovered. Its live PaladinsCat result contains ten authoritative rows with `source=recovered` and retains two confirmed-cheater account tags that would otherwise be hidden behind an API error or missing-match page.
 
-![Complete PaladinsCat scoreboard for recovered match 1280790711](assets/int16-match-recovery/paladinscat-match-1280790711.png)
+![Complete PaladinsCat scoreboard for recovered match 1280790711](../assets/int16-match-recovery/paladinscat-match-1280790711.png)
 
 *PaladinsCat publishes the complete scoreboard for match `1280790711`, labels it Recovered, and retains account-level evidence on the affected player rows.*
 
