@@ -18,6 +18,6 @@ PaladinsCat began with an investigation into a long-standing API failure caused 
 
 [**Read the investigation →**](docs/blog/public-release/skin-id-overflow.md)
 
-This repository contains PaladinsCat's public releases, technical investigations, and community-facing project material. The [frontend](https://github.com/PaladinsCat/PaladinsCat-frontend), [Discord bot](https://github.com/PaladinsCat/PaladinsCat-discord-bot), [locales](https://github.com/PaladinsCat/PaladinsCat-locales), [launcher](https://github.com/PaladinsCat/PaladinsCat-Launcher), and [mods](https://github.com/PaladinsCat/PaladinsCat-mods) have separate public repositories. The backend, Pro frontend, infrastructure, and internal operations remain private.
+This repository contains PaladinsCat's public releases, technical investigations, and community-facing project material. The [frontend](https://github.com/NabiCook/PaladinsCat-frontend), [Discord bot](https://github.com/NabiCook/PaladinsCat-discord-bot), [locales](https://github.com/NabiCook/PaladinsCat-locales), [launcher](https://github.com/NabiCook/PaladinsCat-Launcher), and [mods](https://github.com/NabiCook/PaladinsCat-mods) have separate public repositories. The backend, Pro frontend, infrastructure, and internal operations remain private.
 
 © 2026 PaladinsCat contributors. See the [MIT license](LICENSE) for this repository; other repositories and bundled third-party materials retain their own license terms.
