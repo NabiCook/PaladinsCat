@@ -14,7 +14,7 @@ PaladinsCat is a community analytics platform that brings Paladins player profil
 
 ## How it began
 
-PaladinsCat began with an investigation into a long-standing API failure caused by skin IDs exceeding the signed 16-bit limit of `32,767`. Affected matches returned incomplete data, but an undocumented endpoint provided an alternative route to recover the player identities needed to reconstruct them. That discovery became the foundation of PaladinsCat's match-recovery system and the wider analytics platform.
+PaladinsCat began with an investigation into incomplete Paladins match data.
 
 [**Read the investigation →**](docs/blog/public-release/skin-id-overflow.md)
 
